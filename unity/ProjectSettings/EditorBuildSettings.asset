@@ -6,8 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Navigate Plane.unity
-    guid: 01195aeff31884530af3aa5485c69cef
+    path: Assets/Scenes/Hand Gestures.unity
+    guid: 150e67456692c4ec6ba9bc22a0b0790a
   m_configObjects:
     com.unity.xr.arcore.PlayerSettings: {fileID: 11400000, guid: fe696098519d049208e2544c05a2b925,
       type: 2}

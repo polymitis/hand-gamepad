@@ -1,0 +1,6 @@
+[submodule "mediapipe"]
+	path = mediapipe
+	url = git@github.com:polymitis/mediapipe.git
+[submodule "unity/Assets/Editor/Builder"]
+	path = unity/Assets/Editor/Builder
+	url = git@github.com:polymitis/UnityBuildPipeline.git
