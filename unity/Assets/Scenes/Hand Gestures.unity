@@ -187,11 +187,9 @@ GameObject:
   m_Component:
   - component: {fileID: 503670687}
   - component: {fileID: 503670686}
-  - component: {fileID: 503670685}
-  - component: {fileID: 503670684}
   - component: {fileID: 503670683}
   - component: {fileID: 503670689}
-  - component: {fileID: 503670688}
+  - component: {fileID: 503670684}
   m_Layer: 0
   m_Name: AR Session Origin
   m_TagString: Untagged
@@ -208,13 +206,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 503670682}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 56afbdf8d561343b1b60724bcbf67162, type: 3}
+  m_Script: {fileID: 11500000, guid: 4966719baa26e4b0e8231a24d9bd491a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_PlanePrefab: {fileID: 5701161221599063941, guid: 44218f2b076d547d0abeeda30d0cf438,
-    type: 3}
-  m_CubePrefab: {fileID: 1934569588295450, guid: a189a5bf2d9a049ff99cfe945db504ac,
-    type: 3}
+  m_FocusMode: 1
+  m_LightEstimationMode: 0
 --- !u!114 &503670684
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -224,24 +220,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 503670682}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa17d122634046b4a8e23048891fafc5, type: 3}
+  m_Script: {fileID: 11500000, guid: 56afbdf8d561343b1b60724bcbf67162, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &503670685
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 503670682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1760703bbd54c04488a8d10600262ab, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_PlanePrefab: {fileID: 1568414836858200, guid: 67fd9e2d2f2204afb8fc917ace49a1f5,
-    type: 3}
-  m_DetectionMode: 1
 --- !u!114 &503670686
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -270,22 +251,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &503670688
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 503670682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 56666c5a40171f54783dd416a44f42bf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_EventMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_MaxRayIntersections: 0
 --- !u!20 &503670689
 Camera:
   m_ObjectHideFlags: 0
