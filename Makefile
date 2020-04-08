@@ -73,8 +73,8 @@ unity-ios-dev: $(UNITY_PROJ_DIRS)
 mp-charades-ios:
 	cd $(MP_PROJ_ROOT) && echo "Entering mediapipe/ directory" && \
 	$(BAZEL_110) build --config=ios_arm64 $(MP_CHARADES_BUILD_ROOT)/ios:Charades && \
-	rm -Rf $(UNITY_CHARADES_ROOT)/Assets/$(UNITY_PLUGINS_IOS_DIR)/Charades.framework && \
-	unzip bazel-bin/$(MP_CHARADES_BUILD_ROOT)/ios/Charades.zip -d $(UNITY_CHARADES_ROOT)/Assets/$(UNITY_PLUGINS_IOS_DIR)/ && \
+	rm -Rf $(UNITY_CHARADES_ROOT)/$(UNITY_PLUGINS_IOS_DIR)/Native/Charades.framework && \
+	unzip bazel-bin/$(MP_CHARADES_BUILD_ROOT)/ios/Charades.zip -d $(UNITY_CHARADES_ROOT)/$(UNITY_PLUGINS_IOS_DIR)/Native && \
 	cd .. && echo "Leaving mediapipe/ directory"
 
 clean: clean-ios
@@ -91,4 +91,4 @@ clean-mp-charades-ios:
 	cd $(MP_PROJ_ROOT) && echo "Entering mediapipe/ directory" && \
         $(BAZEL_110) clean && \
         cd .. && echo "Leaving mediapipe/ directory" && \
-	rm -Rf $(UNITY_CHARADES_ROOT)/Assets/$(UNITY_PLUGINS_IOS_DIR)/Charades.framework
+	rm -Rf $(UNITY_CHARADES_ROOT)/$(UNITY_PLUGINS_IOS_DIR)/Native/Charades.framework

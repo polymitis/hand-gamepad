@@ -19,13 +19,9 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#import <Foundation/Foundation.h>
-#import <Charades/Charades.h>
+#ifdef  UNITY_IOS_CHARADES_C_INTF_H_
+#define UNITY_IOS_CHARADES_C_INTF_H_
 
-#import "UnityCharadesCIntf.h"
+void CharadesStart(void);
 
-@interface UnityCharades : NSObject
-
-+ (Charades *)instance; 
-
-@end
+#endif // UNITY_IOS_CHARADES_C_INTF_H_

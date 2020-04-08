@@ -19,9 +19,40 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#ifdef  UNITY_CHARADES_C_INTF_H_
-#define UNITY_CHARADES_C_INTF_H_
+using System.IO;
+using UnityEngine;
+using UnityEditor;
+using UnityEditor.Callbacks;
+using UnityEditor.iOS.Xcode;
+using UnityEditor.iOS.Xcode.Extensions;
 
-void CharadesStart(void);
+public class CharadesBuildPostProc
+{
+	[PostProcessBuildAttribute(1)]
+	public static void OnPostProcessBuild(BuildTarget target, string path)
+	{
+		if (target == BuildTarget.iOS)
+		{
+			PBXProject project = new PBXProject();
+			string sPath = PBXProject.GetPBXProjectPath(path);
+			project.ReadFromFile(sPath);
 
-#endif // UNITY_CHARADES_C_INTF_H_
+			string tn = PBXProject.GetUnityTargetName();
+			string g = project.TargetGuidByName(tn);
+
+			project.AddFrameworkToProject(g, "Accelerate.framework", false);
+
+			string c = project.FindFileGuidByProjectPath(
+				"Frameworks/Plugins/Charades/Plugins/iOS/Native/Charades.framework");
+
+			project.AddFileToEmbedFrameworks(g, c);
+
+			project.AddBuildProperty(g,
+				"ENABLE_BITCODE",
+				"false");
+
+			// modify frameworks and settings as desired
+			File.WriteAllText(sPath, project.WriteToString());
+		}
+	}
+}
