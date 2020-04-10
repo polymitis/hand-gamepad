@@ -1,6 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
@@ -15,7 +15,16 @@ public class HandGestures : MonoBehaviour
     void Awake()
     {
         m_Camera = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
+        if (!m_Camera)
+            throw new Exception("Missing MainCamera");
+
         m_CameraManager = GetComponent<ARCameraManager>();
+        if (!m_CameraManager)
+            throw new Exception("Missing ARCameraManager");
+
+        m_MiniDisplay = GameObject.FindGameObjectWithTag("MiniDisplay").GetComponent<MiniDisplay>();
+        if (!m_MiniDisplay)
+            throw new Exception("Missing MiniDisplay");
     }
 
     void OnEnable()
@@ -33,6 +42,16 @@ public class HandGestures : MonoBehaviour
 
     unsafe void OnCameraFrameReceived(ARCameraFrameEventArgs eventArgs)
     {
+        XRCameraImage image;
+        if (!m_CameraManager.TryGetLatestImage(out image))
+            return;
+
+        m_MiniDisplay.UpdateDisplay(image);
+
+        //TODO Pass image to Charades instead of XRCameraFrame native pointer.
+
+        image.Dispose();
+
 #if !UNITY_EDITOR && UNITY_IOS
         var cameraParams = new XRCameraParams
         {
@@ -44,12 +63,16 @@ public class HandGestures : MonoBehaviour
         };
 
         XRCameraFrame frame;
-        if (m_CameraManager.subsystem.TryGetLatestFrame(cameraParams, out frame))
-            UnityIOSCharadesCIntf_ProcessVideoFrame(frame.nativePtr);
+        if (!m_CameraManager.subsystem.TryGetLatestFrame(cameraParams, out frame))
+            return;
+
+        UnityIOSCharadesCIntf_ProcessVideoFrame(frame.nativePtr);
 #endif
     }
 
     private Camera m_Camera;
 
     private ARCameraManager m_CameraManager;
+
+    MiniDisplay m_MiniDisplay;
 }

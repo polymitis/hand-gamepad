@@ -20,7 +20,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 using System.IO;
-using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEditor.iOS.Xcode;
@@ -37,19 +36,24 @@ public class CharadesBuildPostProc
 			string sPath = PBXProject.GetPBXProjectPath(path);
 			project.ReadFromFile(sPath);
 
-			string tn = PBXProject.GetUnityTargetName();
-			string g = project.TargetGuidByName(tn);
+		    string f = project.GetUnityFrameworkTargetGuid();
 
-			project.AddFrameworkToProject(g, "Accelerate.framework", false);
+			project.AddBuildProperty(f,
+				"ENABLE_BITCODE",
+				"NO");
+
+			string a = project.GetUnityMainTargetGuid();
+
+			project.AddFrameworkToProject(a, "Accelerate.framework", false);
 
 			string c = project.FindFileGuidByProjectPath(
 				"Frameworks/Plugins/Charades/Plugins/iOS/Native/Charades.framework");
 
-			project.AddFileToEmbedFrameworks(g, c);
+			project.AddFileToEmbedFrameworks(a, c);
 
-			project.AddBuildProperty(g,
+			project.AddBuildProperty(a,
 				"ENABLE_BITCODE",
-				"false");
+				"NO");
 
 			// modify frameworks and settings as desired
 			File.WriteAllText(sPath, project.WriteToString());
