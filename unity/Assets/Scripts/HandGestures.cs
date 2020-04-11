@@ -10,6 +10,7 @@ using UnityEngine.XR.ARSubsystems;
 [RequireComponent(typeof(ARCameraManager))]
 public class HandGestures : MonoBehaviour
 {
+#if !UNITY_EDITOR && UNITY_IOS
     private delegate void UnityIOSCharadesCIntf_DidOutputPixelBufferCb(IntPtr buffer, int width, int height);
 
     [DllImport("__Internal")]
@@ -19,10 +20,14 @@ public class HandGestures : MonoBehaviour
     private static extern void UnityIOSCharadesCIntf_ProcessSRGBImage(IntPtr buffer, int width, int height);
 
     [MonoPInvokeCallback(typeof(UnityIOSCharadesCIntf_DidOutputPixelBufferCb))]
-    private static void DidOutputPixelBuffer(IntPtr buffer, int width, int height)
+    private static void DidOutputPixelBuffer(IntPtr pixelBuffer, int width, int height)
     {
-        Debug.Log("OnCharadesDidOutputPixelBuffer called");
+        Debug.Log("PixelBuffer RGBA32 (" + width + ", " + height + ") @ " + pixelBuffer);
+        byte[] managedPixelBuffer = new byte[width * height * 4];
+        Marshal.Copy(pixelBuffer, managedPixelBuffer, 0, managedPixelBuffer.Length);
+        m_MiniDisplay.UpdateDisplay(managedPixelBuffer, new Vector2Int(width, height));
     }
+#endif
 
     void Awake()
     {
@@ -51,18 +56,13 @@ public class HandGestures : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        // Do nothing
-    }
-
     unsafe void OnCameraFrameReceived(ARCameraFrameEventArgs eventArgs)
     {
         XRCameraImage image;
         if (!m_CameraManager.TryGetLatestImage(out image))
             return;
 
-        m_MiniDisplay.UpdateDisplay(image);
+        //m_MiniDisplay.UpdateDisplay(image);
 
 #if !UNITY_EDITOR && UNITY_IOS
         var conversionParams = new XRCameraImageConversionParams
@@ -86,9 +86,9 @@ public class HandGestures : MonoBehaviour
         image.Dispose();
     }
 
-    private Camera m_Camera;
+    static private Camera m_Camera;
 
-    private ARCameraManager m_CameraManager;
+    static private ARCameraManager m_CameraManager;
 
-    MiniDisplay m_MiniDisplay;
+    static private MiniDisplay m_MiniDisplay;
 }

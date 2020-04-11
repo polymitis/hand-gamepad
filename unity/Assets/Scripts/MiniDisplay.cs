@@ -4,9 +4,31 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.XR.ARSubsystems;
 
-unsafe public class MiniDisplay : MonoBehaviour
+public class MiniDisplay : MonoBehaviour
 {
-    public void UpdateDisplay(XRCameraImage image)
+    public void UpdateDisplay(byte[] managedPixelBuffer, Vector2Int size)
+    {
+        if (size != m_BufferSize)
+        {
+            m_BufferSize = size;
+
+            Texture2D.Destroy(m_DisplayTexture);
+            m_DisplayTexture = new Texture2D(
+                m_BufferSize.x,
+                m_BufferSize.y,
+                TextureFormat.RGBA32,
+                false);
+            m_DisplayTexture.hideFlags = HideFlags.HideAndDontSave;
+        }
+
+        var buffer = new NativeArray<byte>(managedPixelBuffer, Allocator.Temp);
+        m_DisplayTexture.LoadRawTextureData(buffer);
+        m_DisplayTexture.Apply();
+
+        m_Renderer.material.SetTexture("_MainTex", m_DisplayTexture);
+    }
+
+    unsafe public void UpdateDisplay(XRCameraImage image)
     {
         var conversionParams = new XRCameraImageConversionParams
         {
@@ -45,10 +67,7 @@ unsafe public class MiniDisplay : MonoBehaviour
             throw new Exception("Missing Renderer");
     }
 
-    void Update()
-    {
-        // Do nothing
-    }
+    private Vector2Int m_BufferSize;
 
     private XRCameraImageConversionParams m_ConversionParams;
 

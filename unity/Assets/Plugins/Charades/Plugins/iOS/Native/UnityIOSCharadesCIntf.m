@@ -34,6 +34,7 @@ UnityIOSCharadesCIntf_DidOutputPixelBufferCb UnityIOSCharadesCIntf_DidOutputPixe
 }
 
 - (void)charades:charades didOutputPixelBuffer:(CVPixelBufferRef)pixelBuffer {
+    NSLog(@"UnityIOSCharadesCIntf: didOutputPixelBuffer: (intptr) %@", CVPixelBufferGetBaseAddress(pixelBuffer));
     UnityIOSCharadesCIntf_DidOutputPixelBuffer(CVPixelBufferGetBaseAddress(pixelBuffer),
                                                (int)CVPixelBufferGetWidth(pixelBuffer),
                                                (int)CVPixelBufferGetHeight(pixelBuffer));
