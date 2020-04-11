@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using AOT;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
@@ -9,8 +10,19 @@ using UnityEngine.XR.ARSubsystems;
 [RequireComponent(typeof(ARCameraManager))]
 public class HandGestures : MonoBehaviour
 {
+    private delegate void UnityIOSCharadesCIntf_DidOutputPixelBufferCb(IntPtr buffer, int width, int height);
+
+    [DllImport("__Internal")]
+    private static extern void UnityIOSCharadesCIntf_SetDidOutputPixelBufferCb(UnityIOSCharadesCIntf_DidOutputPixelBufferCb callback);
+
     [DllImport("__Internal")]
     private static extern void UnityIOSCharadesCIntf_ProcessSRGBImage(IntPtr buffer, int width, int height);
+
+    [MonoPInvokeCallback(typeof(UnityIOSCharadesCIntf_DidOutputPixelBufferCb))]
+    private static void DidOutputPixelBuffer(IntPtr buffer, int width, int height)
+    {
+        Debug.Log("OnCharadesDidOutputPixelBuffer called");
+    }
 
     void Awake()
     {
@@ -32,6 +44,10 @@ public class HandGestures : MonoBehaviour
         if (m_CameraManager != null)
         {
             m_CameraManager.frameReceived += OnCameraFrameReceived;
+
+#if !UNITY_EDITOR && UNITY_IOS
+            UnityIOSCharadesCIntf_SetDidOutputPixelBufferCb(DidOutputPixelBuffer);
+#endif
         }
     }
 

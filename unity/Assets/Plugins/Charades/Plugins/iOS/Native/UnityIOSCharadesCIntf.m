@@ -2,14 +2,13 @@
 #import <Charades/Charades.h>
 #import <Foundation/Foundation.h>
 
-// XRSessionExtensions.GetNativePtr
-struct UnityXRNativeSession
-{
-    int version;
-    void* framePtr;
-};
+typedef void(*UnityIOSCharadesCIntf_DidOutputPixelBufferCb)(intptr_t buffer, int width, int height);
 
-@interface UnityIOSCharadesCIntf : NSObject
+UnityIOSCharadesCIntf_DidOutputPixelBufferCb UnityIOSCharadesCIntf_DidOutputPixelBuffer = NULL;
+
+@interface UnityIOSCharadesCIntf: NSObject <CharadesDelegate>
+
++ (UnityIOSCharadesCIntf *)cintf;
 
 + (Charades *)instance;
 
@@ -17,17 +16,34 @@ struct UnityXRNativeSession
 
 @implementation UnityIOSCharadesCIntf
 
-+ (Charades*)instance
-{
++ (UnityIOSCharadesCIntf*)cintf {
+    static UnityIOSCharadesCIntf *_cintf = nil;
+    if (!_cintf) {
+        _cintf = [[UnityIOSCharadesCIntf alloc] init];
+    }
+    return _cintf;
+}
+
++ (Charades*)instance {
     static Charades *_instance = nil;
     if (!_instance) {
         _instance = [[Charades alloc] init];
+        _instance.delegate = [UnityIOSCharadesCIntf cintf];
     }
     return _instance;
 }
 
-void UnityIOSCharadesCIntf_ProcessSRGBImage(intptr_t buffer, int width, int height)
-{
+- (void)charades:charades didOutputPixelBuffer:(CVPixelBufferRef)pixelBuffer {
+    UnityIOSCharadesCIntf_DidOutputPixelBuffer(CVPixelBufferGetBaseAddress(pixelBuffer),
+                                               (int)CVPixelBufferGetWidth(pixelBuffer),
+                                               (int)CVPixelBufferGetHeight(pixelBuffer));
+}
+
+void UnityIOSCharadesCIntf_SetDidOutputPixelBufferCb(UnityIOSCharadesCIntf_DidOutputPixelBufferCb callback) {
+    UnityIOSCharadesCIntf_DidOutputPixelBuffer = callback;
+}
+
+void UnityIOSCharadesCIntf_ProcessSRGBImage(intptr_t buffer, int width, int height) {
     // In case of invalid buffer ref
     if (!buffer) {
         NSLog(@"Null pointer to XR frame passed");
