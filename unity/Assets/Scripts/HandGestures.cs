@@ -10,7 +10,7 @@ using UnityEngine.XR.ARSubsystems;
 public class HandGestures : MonoBehaviour
 {
     [DllImport("__Internal")]
-    private static extern void UnityIOSCharadesCIntf_ProcessVideoFrame(IntPtr buffer);
+    private static extern void UnityIOSCharadesCIntf_ProcessSRGBImage(IntPtr buffer, int width, int height);
 
     void Awake()
     {
@@ -48,26 +48,26 @@ public class HandGestures : MonoBehaviour
 
         m_MiniDisplay.UpdateDisplay(image);
 
-        //TODO Pass image to Charades instead of XRCameraFrame native pointer.
-
-        image.Dispose();
-
 #if !UNITY_EDITOR && UNITY_IOS
-        var cameraParams = new XRCameraParams
+        var conversionParams = new XRCameraImageConversionParams
         {
-            zNear = m_Camera.nearClipPlane,
-            zFar = m_Camera.farClipPlane,
-            screenWidth = Screen.width,
-            screenHeight = Screen.height,
-            screenOrientation = Screen.orientation
+            inputRect = new RectInt(0, 0, image.width, image.height),
+            outputDimensions = new Vector2Int(image.width / 2, image.height / 2),
+            outputFormat = TextureFormat.BGRA32,
+            transformation = CameraImageTransformation.MirrorY
         };
 
-        XRCameraFrame frame;
-        if (!m_CameraManager.subsystem.TryGetLatestFrame(cameraParams, out frame))
-            return;
+        int size = image.GetConvertedDataSize(conversionParams);
+        var buffer = new NativeArray<byte>(size, Allocator.Temp);
+        image.Convert(conversionParams, new IntPtr(buffer.GetUnsafePtr()), buffer.Length);
 
-        UnityIOSCharadesCIntf_ProcessVideoFrame(frame.nativePtr);
+        UnityIOSCharadesCIntf_ProcessSRGBImage(
+            new IntPtr(buffer.GetUnsafePtr()),
+            conversionParams.outputDimensions.x,
+            conversionParams.outputDimensions.y);
 #endif
+
+        image.Dispose();
     }
 
     private Camera m_Camera;

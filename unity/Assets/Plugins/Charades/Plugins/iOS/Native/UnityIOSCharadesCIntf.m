@@ -26,19 +26,27 @@ struct UnityXRNativeSession
     return _instance;
 }
 
-void UnityIOSCharadesCIntf_ProcessVideoFrame(intptr_t ptr)
+void UnityIOSCharadesCIntf_ProcessSRGBImage(intptr_t buffer, int width, int height)
 {
     // In case of invalid buffer ref
-    if (!ptr) {
+    if (!buffer) {
         NSLog(@"Null pointer to XR frame passed");
         return;
     }
 
-    struct UnityXRNativeSession *unityXRFrame = (struct UnityXRNativeSession *) ptr;
-    ARFrame* frame = (__bridge ARFrame*)unityXRFrame->framePtr;
-    CVPixelBufferRef buffer = frame.capturedImage;
+    CVPixelBufferRef image;
+    CVPixelBufferCreateWithBytes(NULL,
+                                 width,
+                                 height,
+                                 kCVPixelFormatType_32BGRA,
+                                 (void*)buffer,
+                                 width * 4,
+                                 NULL,
+                                 0,
+                                 NULL,
+                                 &image);
 
-    [[UnityIOSCharadesCIntf instance] processVideoFrame:(CVPixelBufferRef)buffer];
+    [[UnityIOSCharadesCIntf instance] processVideoFrame:image];
 }
 
 @end
