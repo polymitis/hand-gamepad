@@ -11,15 +11,15 @@ using UnityEngine.XR.ARSubsystems;
 public class HandGestures : MonoBehaviour
 {
 #if !UNITY_EDITOR && UNITY_IOS
-    private delegate void UnityIOSCharadesCIntf_DidOutputPixelBufferCb(IntPtr buffer, int width, int height);
+    private delegate void UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb(IntPtr buffer, int width, int height);
 
     [DllImport("__Internal")]
-    private static extern void UnityIOSCharadesCIntf_SetDidOutputPixelBufferCb(UnityIOSCharadesCIntf_DidOutputPixelBufferCb callback);
+    private static extern void UnityIOSHandGestureDetectorCIntf_SetDidOutputPixelBufferCb(UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb callback);
 
     [DllImport("__Internal")]
-    private static extern void UnityIOSCharadesCIntf_ProcessSRGBImage(IntPtr buffer, int width, int height);
+    private static extern void UnityIOSHandGestureDetectorCIntf_ProcessSRGBImage(IntPtr buffer, int width, int height);
 
-    [MonoPInvokeCallback(typeof(UnityIOSCharadesCIntf_DidOutputPixelBufferCb))]
+    [MonoPInvokeCallback(typeof(UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb))]
     private static void DidOutputPixelBuffer(IntPtr pixelBuffer, int width, int height)
     {
         Debug.Log("PixelBuffer RGBA32 (" + width + ", " + height + ") @ " + pixelBuffer);
@@ -51,7 +51,7 @@ public class HandGestures : MonoBehaviour
             m_CameraManager.frameReceived += OnCameraFrameReceived;
 
 #if !UNITY_EDITOR && UNITY_IOS
-            UnityIOSCharadesCIntf_SetDidOutputPixelBufferCb(DidOutputPixelBuffer);
+            UnityIOSHandGestureDetectorCIntf_SetDidOutputPixelBufferCb(DidOutputPixelBuffer);
 #endif
         }
     }
@@ -77,7 +77,7 @@ public class HandGestures : MonoBehaviour
         var buffer = new NativeArray<byte>(size, Allocator.Temp);
         image.Convert(conversionParams, new IntPtr(buffer.GetUnsafePtr()), buffer.Length);
 
-        UnityIOSCharadesCIntf_ProcessSRGBImage(
+        UnityIOSHandGestureDetectorCIntf_ProcessSRGBImage(
             new IntPtr(buffer.GetUnsafePtr()),
             conversionParams.outputDimensions.x,
             conversionParams.outputDimensions.y);

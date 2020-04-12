@@ -25,38 +25,38 @@ using UnityEditor.Callbacks;
 using UnityEditor.iOS.Xcode;
 using UnityEditor.iOS.Xcode.Extensions;
 
-public class CharadesBuildPostProc
+public class HandGestureDetectorBuildPostProc
 {
-	[PostProcessBuildAttribute(1)]
-	public static void OnPostProcessBuild(BuildTarget target, string path)
-	{
-		if (target == BuildTarget.iOS)
-		{
-			PBXProject project = new PBXProject();
-			string sPath = PBXProject.GetPBXProjectPath(path);
-			project.ReadFromFile(sPath);
+    [PostProcessBuildAttribute(1)]
+    public static void OnPostProcessBuild(BuildTarget target, string path)
+    {
+        if (target == BuildTarget.iOS)
+        {
+            PBXProject project = new PBXProject();
+            string sPath = PBXProject.GetPBXProjectPath(path);
+            project.ReadFromFile(sPath);
 
-		    string f = project.GetUnityFrameworkTargetGuid();
+            string f = project.GetUnityFrameworkTargetGuid();
 
-			project.AddBuildProperty(f,
-				"ENABLE_BITCODE",
-				"NO");
+            project.AddBuildProperty(f,
+                "ENABLE_BITCODE",
+                "NO");
 
-			string a = project.GetUnityMainTargetGuid();
+            string a = project.GetUnityMainTargetGuid();
 
-			project.AddFrameworkToProject(a, "Accelerate.framework", false);
+            project.AddFrameworkToProject(a, "Accelerate.framework", false);
 
-			string c = project.FindFileGuidByProjectPath(
-				"Frameworks/Plugins/Charades/Plugins/iOS/Native/Charades.framework");
+            string c = project.FindFileGuidByProjectPath(
+                "Frameworks/Plugins/HandGestureDetector/Plugins/iOS/Native/HandGestureDetector.framework");
 
-			project.AddFileToEmbedFrameworks(a, c);
+            project.AddFileToEmbedFrameworks(a, c);
 
-			project.AddBuildProperty(a,
-				"ENABLE_BITCODE",
-				"NO");
+            project.AddBuildProperty(a,
+                "ENABLE_BITCODE",
+                "NO");
 
-			// modify frameworks and settings as desired
-			File.WriteAllText(sPath, project.WriteToString());
-		}
-	}
+            // modify frameworks and settings as desired
+            File.WriteAllText(sPath, project.WriteToString());
+        }
+    }
 }
