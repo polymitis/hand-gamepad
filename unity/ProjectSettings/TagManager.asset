@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 2
   tags:
   - MiniDisplay
+  - RightHand
   layers:
   - Default
   - TransparentFX
