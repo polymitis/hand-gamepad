@@ -2,9 +2,12 @@
 #import <HandGestureDetector/HandGestureDetector.h>
 #import <Foundation/Foundation.h>
 
-typedef void(*UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb)(intptr_t buffer, int width, int height);
+typedef void(*UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb)(intptr_t pixelBuffer, int width, int height);
+
+typedef void(*UnityIOSHandGestureDetectorCIntf_DidOutputHandLandmarksCb)(intptr_t hlmPkt);
 
 UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb UnityIOSHandGestureDetectorCIntf_DidOutputPixelBuffer = NULL;
+UnityIOSHandGestureDetectorCIntf_DidOutputHandLandmarksCb UnityIOSHandGestureDetectorCIntf_DidOutputHandLandmarks = NULL;
 
 @interface UnityIOSHandGestureDetectorCIntf: NSObject <HandGestureDetectorDelegate>
 
@@ -40,23 +43,33 @@ UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb UnityIOSHandGestureDetec
     CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
 }
 
+- (void)handGestureDetector:hgd didOutputHandLandmarks:(float*)hlmPkt {
+    if (hlmPkt)
+        UnityIOSHandGestureDetectorCIntf_DidOutputHandLandmarks(hlmPkt);
+}
+
 void UnityIOSHandGestureDetectorCIntf_SetDidOutputPixelBufferCb(UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb callback) {
     UnityIOSHandGestureDetectorCIntf_DidOutputPixelBuffer = callback;
 }
 
-void UnityIOSHandGestureDetectorCIntf_ProcessSRGBImage(intptr_t buffer, int width, int height) {
+void UnityIOSHandGestureDetectorCIntf_SetDidOutputHandLandmarksCb(UnityIOSHandGestureDetectorCIntf_DidOutputHandLandmarksCb callback) {
+    UnityIOSHandGestureDetectorCIntf_DidOutputHandLandmarks = callback;
+}
+
+void UnityIOSHandGestureDetectorCIntf_ProcessSRGBImage(intptr_t imageBuffer, int width, int height) {
     // In case of invalid buffer ref
-    if (!buffer) {
+    if (!imageBuffer) {
         NSLog(@"Null pointer to SRGB image buffer passed");
         return;
     }
     @autoreleasepool {
         CVPixelBufferRef pixelBuffer;
-        CVPixelBufferCreateWithBytes(NULL, width, height, kCVPixelFormatType_32BGRA, (void*)buffer, width * 4, NULL, 0, NULL, &pixelBuffer);
+        CVPixelBufferCreateWithBytes(NULL, width, height, kCVPixelFormatType_32BGRA, (void*)imageBuffer, width * 4, NULL, 0, NULL, &pixelBuffer);
         [[UnityIOSHandGestureDetectorCIntf instance] processPixelBuffer:pixelBuffer];
         CVPixelBufferRelease(pixelBuffer);
     }
 }
 
 @end
+
 

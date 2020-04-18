@@ -11,21 +11,53 @@ using UnityEngine.XR.ARSubsystems;
 public class HandGestures : MonoBehaviour
 {
 #if !UNITY_EDITOR && UNITY_IOS
-    private delegate void UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb(IntPtr buffer, int width, int height);
+    // (N_HANDS #N, N_HLM #0, N_HLM #N-1, LM #0_0, .., LM#N-1_[N_HLM #N-1]-1)
+    private const int HGD_HLM_PKT_HEADER_LEN = 3;
+    private const int HGD_HLM_PKT_NUM_HANDS_OFFSET = 0;
+    private const int HGD_HLM_PKT_NUM_HANDS = 2;
+    private const int HGD_HLM_PKT_NUM_HAND_LANDMARKS_OFFSET = HGD_HLM_PKT_NUM_HANDS_OFFSET + 1;
+    private const int HGD_HLM_PKT_NUM_HAND_LANDMARKS = 21;
+
+    // LM(X, Y, Z)
+    private const int HGD_HLM_PKT_HAND_LANDMARK_LEN = 3;
+    private const int HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET = 0;
+    private const int HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET = 1;
+    private const int HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET = 2;
+
+    private const int HGD_HLM_PKT_LEN = HGD_HLM_PKT_HEADER_LEN + (HGD_HLM_PKT_NUM_HANDS * HGD_HLM_PKT_NUM_HAND_LANDMARKS * HGD_HLM_PKT_HAND_LANDMARK_LEN);
+
+    private delegate void UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb(IntPtr pixelBuffer, int width, int height);
+    
+    private delegate void UnityIOSHandGestureDetectorCIntf_DidOutputHandLandmarksCb(IntPtr landmarkPkt);
 
     [DllImport("__Internal")]
     private static extern void UnityIOSHandGestureDetectorCIntf_SetDidOutputPixelBufferCb(UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb callback);
 
     [DllImport("__Internal")]
-    private static extern void UnityIOSHandGestureDetectorCIntf_ProcessSRGBImage(IntPtr buffer, int width, int height);
+    private static extern void UnityIOSHandGestureDetectorCIntf_SetDidOutputHandLandmarksCb(UnityIOSHandGestureDetectorCIntf_DidOutputHandLandmarksCb callback);
+
+    [DllImport("__Internal")]
+    private static extern void UnityIOSHandGestureDetectorCIntf_ProcessSRGBImage(IntPtr imageBuffer, int width, int height);
 
     [MonoPInvokeCallback(typeof(UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb))]
     private static void DidOutputPixelBuffer(IntPtr pixelBuffer, int width, int height)
     {
-        Debug.Log("PixelBuffer RGBA32 (" + width + ", " + height + ") @ " + pixelBuffer);
+        Debug.Log("HGD: Received PixelBuffer RGBA32 (" + width + ", " + height + ") @ " + pixelBuffer);
         byte[] managedPixelBuffer = new byte[width * height * 4];
         Marshal.Copy(pixelBuffer, managedPixelBuffer, 0, managedPixelBuffer.Length);
         m_MiniDisplay.UpdateDisplay(managedPixelBuffer, new Vector2Int(width, height));
+    }
+
+    [MonoPInvokeCallback(typeof(UnityIOSHandGestureDetectorCIntf_DidOutputHandLandmarksCb))]
+    private static void DidOutputHandLandmarks(IntPtr hlmPkt)
+    {
+        Debug.Log("HGD: Received LandmarkPkt @ " + hlmPkt);
+        float[] managedHlmPkt = new float[HGD_HLM_PKT_LEN];
+        Marshal.Copy(hlmPkt, managedHlmPkt, 0, managedHlmPkt.Length);
+
+        for (int i = 0; i < (int)managedHlmPkt[HGD_HLM_PKT_NUM_HANDS_OFFSET]; i++)
+            Debug.Log("HGD: Number of landmarks for hand[" + i + "]: " +
+                (int)managedHlmPkt[HGD_HLM_PKT_NUM_HAND_LANDMARKS_OFFSET + i]);
     }
 #endif
 
@@ -52,6 +84,7 @@ public class HandGestures : MonoBehaviour
 
 #if !UNITY_EDITOR && UNITY_IOS
             UnityIOSHandGestureDetectorCIntf_SetDidOutputPixelBufferCb(DidOutputPixelBuffer);
+            UnityIOSHandGestureDetectorCIntf_SetDidOutputHandLandmarksCb(DidOutputHandLandmarks);
 #endif
         }
     }

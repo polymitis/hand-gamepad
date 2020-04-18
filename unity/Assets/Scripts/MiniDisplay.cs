@@ -25,7 +25,7 @@ public class MiniDisplay : MonoBehaviour
         m_DisplayTexture.LoadRawTextureData(buffer);
         m_DisplayTexture.Apply();
 
-        m_Renderer.material.SetTexture("_MainTex", m_DisplayTexture);
+        m_canvasRenderer.SetTexture(m_DisplayTexture);
     }
 
     unsafe public void UpdateDisplay(XRCameraImage image)
@@ -57,13 +57,13 @@ public class MiniDisplay : MonoBehaviour
         m_DisplayTexture.LoadRawTextureData(buffer);
         m_DisplayTexture.Apply();
 
-        m_Renderer.material.SetTexture("_MainTex", m_DisplayTexture);
+        m_canvasRenderer.SetTexture(m_DisplayTexture);
     }
 
     void Awake()
     {
-        m_Renderer = GetComponent<Renderer>();
-        if (!m_Renderer)
+        m_canvasRenderer = GetComponent<CanvasRenderer>();
+        if (!m_canvasRenderer)
             throw new Exception("Missing Renderer");
     }
 
@@ -73,5 +73,5 @@ public class MiniDisplay : MonoBehaviour
 
     private Texture2D m_DisplayTexture;
 
-    private Renderer m_Renderer;
+    private CanvasRenderer m_canvasRenderer;
 }
