@@ -55,9 +55,20 @@ public class HandGestures : MonoBehaviour
         float[] managedHlmPkt = new float[HGD_HLM_PKT_LEN];
         Marshal.Copy(hlmPkt, managedHlmPkt, 0, managedHlmPkt.Length);
 
-        for (int i = 0; i < (int)managedHlmPkt[HGD_HLM_PKT_NUM_HANDS_OFFSET]; i++)
-            Debug.Log("HGD: Number of landmarks for hand[" + i + "]: " +
-                (int)managedHlmPkt[HGD_HLM_PKT_NUM_HAND_LANDMARKS_OFFSET + i]);
+        int num_hands = (int)managedHlmPkt[HGD_HLM_PKT_NUM_HANDS_OFFSET];
+        Debug.Log("\tNumber of hand instances with landmarks: " + num_hands);
+
+        for (int hand_index = 0; hand_index < num_hands; hand_index++)
+        {
+            int num_hlm = (int)managedHlmPkt[HGD_HLM_PKT_NUM_HAND_LANDMARKS_OFFSET + hand_index];
+            Debug.Log("\tNumber of landmarks for hand[" + hand_index + "]: " + num_hlm);
+
+            for (int i = 0; i < num_hlm; i++)
+            {
+                int lm_index = (int)(HGD_HLM_PKT_HEADER_LEN + (hand_index * HGD_HLM_PKT_NUM_HAND_LANDMARKS * HGD_HLM_PKT_HAND_LANDMARK_LEN) + i);
+                Debug.Log(@"\t\tLandmark[" + i + "]: (" + managedHlmPkt[lm_index + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET] + ", " + managedHlmPkt[lm_index + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET] + ", " + managedHlmPkt[lm_index + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET] + ")");
+            }
+        }
     }
 #endif
 
