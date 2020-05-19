@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 using AOT;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -10,22 +11,19 @@ using UnityEngine.XR.ARSubsystems;
 [RequireComponent(typeof(ARCameraManager))]
 public class HandGestures : MonoBehaviour
 {
+    [SerializeField]
+    [Tooltip("Instantiate the prefab on the tip of the detected index finger.")]
+    GameObject m_SpherePrefab;
+
+    public GameObject SpherePrefab
+    {
+        get { return m_SpherePrefab; }
+        set { m_SpherePrefab = value; }
+    }
+
+    public GameObject sphere { get; private set; }
+
 #if !UNITY_EDITOR && UNITY_IOS
-    // (N_HANDS #N, N_HLM #0, N_HLM #N-1, LM #0_0, .., LM#N-1_[N_HLM #N-1]-1)
-    private const int HGD_HLM_PKT_HEADER_LEN = 3;
-    private const int HGD_HLM_PKT_NUM_HANDS_OFFSET = 0;
-    private const int HGD_HLM_PKT_NUM_HANDS = 2;
-    private const int HGD_HLM_PKT_NUM_HAND_LANDMARKS_OFFSET = HGD_HLM_PKT_NUM_HANDS_OFFSET + 1;
-    private const int HGD_HLM_PKT_NUM_HAND_LANDMARKS = 21;
-
-    // LM(X, Y, Z)
-    private const int HGD_HLM_PKT_HAND_LANDMARK_LEN = 3;
-    private const int HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET = 0;
-    private const int HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET = 1;
-    private const int HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET = 2;
-
-    private const int HGD_HLM_PKT_LEN = HGD_HLM_PKT_HEADER_LEN + (HGD_HLM_PKT_NUM_HANDS * HGD_HLM_PKT_NUM_HAND_LANDMARKS * HGD_HLM_PKT_HAND_LANDMARK_LEN);
-
     private delegate void UnityIOSHandGestureDetectorCIntf_DidOutputPixelBufferCb(IntPtr pixelBuffer, int width, int height);
     
     private delegate void UnityIOSHandGestureDetectorCIntf_DidOutputHandLandmarksCb(IntPtr landmarkPkt);
@@ -51,26 +49,31 @@ public class HandGestures : MonoBehaviour
     [MonoPInvokeCallback(typeof(UnityIOSHandGestureDetectorCIntf_DidOutputHandLandmarksCb))]
     private static void DidOutputHandLandmarks(IntPtr hlmPkt)
     {
-        Debug.Log("HGD: Received LandmarkPkt @ " + hlmPkt);
-        float[] managedHlmPkt = new float[HGD_HLM_PKT_LEN];
-        Marshal.Copy(hlmPkt, managedHlmPkt, 0, managedHlmPkt.Length);
+        while (Interlocked.Exchange(ref m_HandLandmarksLock, 1) != 0) {}
 
-        int num_hands = (int)managedHlmPkt[HGD_HLM_PKT_NUM_HANDS_OFFSET];
+        Debug.Log("HGD: Received LandmarkPkt @ " + hlmPkt);
+        Marshal.Copy(hlmPkt, m_HandLandmarks, 0, m_HandLandmarks.Length);
+
+        Interlocked.Exchange(ref m_HandLandmarksLock, 0);
+
+        int num_hands = (int)m_HandLandmarks[HGD_HLM_PKT_NUM_HANDS_OFFSET];
         Debug.Log("\tNumber of hand instances with landmarks: " + num_hands);
 
+#if DEBUG
         for (int hand_index = 0; hand_index < num_hands; hand_index++)
         {
-            int num_hlm = (int)managedHlmPkt[HGD_HLM_PKT_NUM_HAND_LANDMARKS_OFFSET + hand_index];
+            int num_hlm = (int)m_HandLandmarks[HGD_HLM_PKT_NUM_HAND_LANDMARKS_OFFSET + hand_index];
             Debug.Log("\tNumber of landmarks for hand[" + hand_index + "]: " + num_hlm);
 
             for (int i = 0; i < num_hlm; i++)
             {
                 int lm_index = (int)(HGD_HLM_PKT_HEADER_LEN + (hand_index * HGD_HLM_PKT_NUM_HAND_LANDMARKS * HGD_HLM_PKT_HAND_LANDMARK_LEN) + i);
-                Debug.Log(@"\t\tLandmark[" + i + "]: (" + managedHlmPkt[lm_index + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET] + ", " + managedHlmPkt[lm_index + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET] + ", " + managedHlmPkt[lm_index + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET] + ")");
+                Debug.Log(@"\t\tLandmark[" + i + "]: (" + m_HandLandmarks[lm_index + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET] + ", " + m_HandLandmarks[lm_index + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET] + ", " + m_HandLandmarks[lm_index + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET] + ")");
             }
         }
+#endif // DEBUG
     }
-#endif
+#endif // !UNITY_EDITOR && UNITY_IOS
 
     void Awake()
     {
@@ -130,9 +133,74 @@ public class HandGestures : MonoBehaviour
         image.Dispose();
     }
 
-    static private Camera m_Camera;
+    void Update()
+    {
+        ProcessHandLandmarks();
+    }
 
-    static private ARCameraManager m_CameraManager;
+    private void ProcessHandLandmarks()
+    {
+        if (Interlocked.Exchange(ref m_HandLandmarksLock, 1) != 0)
+            return;
 
-    static private MiniDisplay m_MiniDisplay;
+        int num_hands = (int)m_HandLandmarks[HGD_HLM_PKT_NUM_HANDS_OFFSET];
+        if (num_hands == 0)
+        {
+            Interlocked.Exchange(ref m_HandLandmarksLock, 0);
+            return;
+        }
+
+        Vector2 screenCenter;
+        screenCenter.x = Screen.width / 2;
+        screenCenter.y = Screen.height / 2;
+
+        var indexTipOffset = HGD_HLM_PKT_HEADER_LEN + HGD_HLM_PKT_HAND_LANDMARK_INDEX_TIP_OFFSET; 
+        var indexTipScreenPos = new Vector2(
+            (1 - m_HandLandmarks[indexTipOffset + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET]) * Screen.width,
+            (1 - m_HandLandmarks[indexTipOffset + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET]) * Screen.height);
+        indexTipScreenPos -= screenCenter;
+
+        Interlocked.Exchange(ref m_HandLandmarksLock, 0);
+
+        var position = new Vector3(indexTipScreenPos.x, indexTipScreenPos.y, 20f);
+
+        if (!sphere)
+        {
+            sphere = Instantiate(SpherePrefab, position, Quaternion.identity);
+            Debug.Log("HGD: Sphere instantiated at " + sphere.transform.position);
+        }
+        else
+        {
+            sphere.transform.position = position;
+            Debug.Log("HGD: Sphere moved at " + sphere.transform.position);
+        }
+
+    }
+
+    // (N_HANDS #N, N_HLM #0, N_HLM #N-1, LM #0_0, .., LM#N-1_[N_HLM #N-1]-1)
+    private const int HGD_HLM_PKT_HEADER_LEN = 3;
+    private const int HGD_HLM_PKT_NUM_HANDS_OFFSET = 0;
+    private const int HGD_HLM_PKT_NUM_HANDS = 2;
+    private const int HGD_HLM_PKT_NUM_HAND_LANDMARKS_OFFSET = HGD_HLM_PKT_NUM_HANDS_OFFSET + 1;
+    private const int HGD_HLM_PKT_NUM_HAND_LANDMARKS = 21;
+
+    // LM(X, Y, Z)
+    private const int HGD_HLM_PKT_HAND_LANDMARK_LEN = 3;
+    private const int HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET = 0;
+    private const int HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET = 1;
+    private const int HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET = 2;
+
+    // LMs
+    private const int HGD_HLM_PKT_HAND_LANDMARK_INDEX_TIP_OFFSET = 8;
+
+    private const int HGD_HLM_PKT_LEN = HGD_HLM_PKT_HEADER_LEN + (HGD_HLM_PKT_NUM_HANDS * HGD_HLM_PKT_NUM_HAND_LANDMARKS * HGD_HLM_PKT_HAND_LANDMARK_LEN);
+
+    private static int m_HandLandmarksLock = 0;
+    private static float[] m_HandLandmarks = new float[HGD_HLM_PKT_LEN];
+
+    private static Camera m_Camera;
+
+    private static ARCameraManager m_CameraManager;
+
+    private static MiniDisplay m_MiniDisplay;
 }
