@@ -277,8 +277,6 @@ GameObject:
   - component: {fileID: 503670686}
   - component: {fileID: 503670683}
   - component: {fileID: 503670689}
-  - component: {fileID: 503670688}
-  - component: {fileID: 503670685}
   - component: {fileID: 503670684}
   m_Layer: 0
   m_Name: AR Session Origin
@@ -315,18 +313,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_SpherePrefab: {fileID: 6116542311173425063, guid: fe953e51e29a64129b3bee47323ea97e,
     type: 3}
---- !u!114 &503670685
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 503670682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa17d122634046b4a8e23048891fafc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &503670686
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -355,21 +341,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &503670688
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 503670682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1760703bbd54c04488a8d10600262ab, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_PlanePrefab: {fileID: 1568414836858200, guid: 0faa2e173bbd442a8bfeb91bad37ddd1,
-    type: 3}
-  m_DetectionMode: -1
 --- !u!20 &503670689
 Camera:
   m_ObjectHideFlags: 0

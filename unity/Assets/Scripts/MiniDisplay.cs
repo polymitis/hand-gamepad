@@ -6,7 +6,7 @@ using UnityEngine.XR.ARSubsystems;
 
 public class MiniDisplay : MonoBehaviour
 {
-    public void UpdateDisplay(byte[] managedPixelBuffer, Vector2Int size)
+    public void UpdateDisplay(byte[] pixelBuffer, Vector2Int size)
     {
         if (size != m_BufferSize)
         {
@@ -21,7 +21,7 @@ public class MiniDisplay : MonoBehaviour
             m_DisplayTexture.hideFlags = HideFlags.HideAndDontSave;
         }
 
-        var buffer = new NativeArray<byte>(managedPixelBuffer, Allocator.Temp);
+        var buffer = new NativeArray<byte>(pixelBuffer, Allocator.Temp);
         m_DisplayTexture.LoadRawTextureData(buffer);
         m_DisplayTexture.Apply();
 

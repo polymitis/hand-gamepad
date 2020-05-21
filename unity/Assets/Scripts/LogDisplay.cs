@@ -5,6 +5,13 @@ using UnityEngine.UI;
 
 public class LogDisplay : MonoBehaviour
 {
+    public void Clear()
+    {
+        m_Log.Clear();
+
+        m_Dirty = true;
+    }
+
     public void Log(string msg)
     {
         if (msg.Length > MAX_MSG_LENGTH)
