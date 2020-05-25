@@ -185,28 +185,13 @@ public class HandGestures : MonoBehaviour
         m_LogDisplay.Log("HGD: Hand is " + ((m_IsHandVisible) ? "VISIBLE" : "AWAY"));
         m_LogDisplay.Log("HGD: Wrist-Point/Wrist-Thumb (open hand > " + HGD_WRIST_POINT_TO_WRIST_THUMB_RATIO + ") " + m_WristPointToWristThumbRatio);
         m_LogDisplay.Log("HGD: Hand is " + ((m_IsHandOpen) ? "OPEN" : "CLOSED"));
-        m_LogDisplay.Log("HGD: Hand size " + m_HandSize);
-        m_LogDisplay.Log("HGD: Palm size " + m_PalmSize);
-        m_LogDisplay.Log("HGD: Hand to Camera distance " + ((m_IsHandOpen) ? m_OpenHandDist : m_ClosedHandDist));
-
-        m_LogDisplay.Log("HGD: Screen pos of palm " + m_PalmPos);
-        m_LogDisplay.Log("HGD: Screen pos of wrist " + m_WristPos);
-        m_LogDisplay.Log("HGD: Screen pos of index " + m_IndexPos);
-        m_LogDisplay.Log("HGD: Screen pos of little " + m_LittlePos);
-        m_LogDisplay.Log("HGD: Screen pos of point " + m_PointPos);
-        m_LogDisplay.Log("HGD: Screen pos of thumb " + m_ThumbPos);
-
-        var palmToWristDist = Vector2.Distance(m_PalmPos, m_WristPos);
-        m_LogDisplay.Log("HGD: Palm to wrist distance " + palmToWristDist);
-        m_LogDisplay.Log("HGD: Palm to wrist dist/ref " + (palmToWristDist / HGD_PALM_WRIST_DISTANCE));
-
-        var palmToIndexDist = Vector2.Distance(m_PalmPos, m_IndexPos);
-        m_LogDisplay.Log("HGD: Palm to index distance " + palmToIndexDist);
-        m_LogDisplay.Log("HGD: Palm to index dist/ref " + (palmToIndexDist / HGD_PALM_INDEX_DISTANCE));
-
-        var palmToLittleDist = Vector2.Distance(m_PalmPos, m_LittlePos);
-        m_LogDisplay.Log("HGD: Palm to little distance " + palmToLittleDist);
-        m_LogDisplay.Log("HGD: Palm to little dist/ref " + (palmToLittleDist / HGD_PALM_LITTLE_DISTANCE));
+        m_LogDisplay.Log("HGD: Hand size " + m_HandSize + ", palm size " + m_PalmSize);
+        m_LogDisplay.Log("HGD: Screen pos of palm (" + m_PalmPos.x + ", " + m_PalmPos.y + "), camera dist " + ((m_IsHandOpen) ? m_OpenHandDist : m_ClosedHandDist));
+        m_LogDisplay.Log("HGD: Screen pos of wrist (" + m_WristPos.x + ", " + m_WristPos.y + ") , rel depth " + m_WristPos.z + ", rel palm dist " + m_WristRelDist);
+        m_LogDisplay.Log("HGD: Screen pos of index (" + m_IndexPos.x + ", " + m_IndexPos.y + "), rel depth " + m_IndexPos.z + ", rel palm dist " + m_IndexRelDist);
+        m_LogDisplay.Log("HGD: Screen pos of little (" + m_LittlePos.x + ", " + m_LittlePos.y + "), rel depth " + m_LittlePos.z + ", rel palm dist " + m_PointRelDist);
+        m_LogDisplay.Log("HGD: Screen pos of point (" + m_PointPos.x + ", " + m_PointPos.y + "), rel depth " + m_PointPos.z + ", rel palm dist " + m_ThumbRelDist);
+        m_LogDisplay.Log("HGD: Screen pos of thumb (" + m_ThumbPos.x + ", " + m_ThumbPos.y + "), rel depth " + m_ThumbPos.z + ", rel palm dist " + m_LittleRelDist);
     }
 
     void UpdateSphere()
@@ -380,6 +365,13 @@ public class HandGestures : MonoBehaviour
         m_ThumbPos += (thumbPos - m_ThumbPos) / m_LmAvgSamples;
         m_LittlePos += (littlePos - m_LittlePos) / m_LmAvgSamples;
 
+        // Estimate landmark relative distances for palm center
+        m_WristRelDist = HGD_PALM_RELATIVE_DEPTH_MAX * m_WristPos.z;
+        m_IndexRelDist = HGD_PALM_RELATIVE_DEPTH_MAX * m_IndexPos.z;
+        m_PointRelDist = HGD_PALM_RELATIVE_DEPTH_MAX * m_PointPos.z;
+        m_ThumbRelDist = HGD_PALM_RELATIVE_DEPTH_MAX * m_ThumbPos.z;
+        m_LittleRelDist = HGD_PALM_RELATIVE_DEPTH_MAX * m_LittlePos.z;
+
         // Determine if the hand is open/closed
         m_WristPointToWristThumbRatio = Vector2.Distance(m_WristPos, m_PointPos) / Vector2.Distance(m_WristPos, m_ThumbPos);
         m_IsHandOpen = m_WristPointToWristThumbRatio > HGD_WRIST_POINT_TO_WRIST_THUMB_RATIO;
@@ -483,6 +475,13 @@ public class HandGestures : MonoBehaviour
     Vector3 m_ThumbPos;
     Vector3 m_LittlePos;
 
+    const float HGD_PALM_RELATIVE_DEPTH_MAX = 0.08f;
+    float m_WristRelDist;
+    float m_IndexRelDist;
+    float m_PointRelDist;
+    float m_ThumbRelDist;
+    float m_LittleRelDist;
+
     // Wrist-thumb / Wrist-point ratio
     const float HGD_WRIST_POINT_TO_WRIST_THUMB_RATIO = 1.1f;
 
@@ -526,11 +525,6 @@ public class HandGestures : MonoBehaviour
     // Last estimated hand distance from camera
     float m_OpenHandDist;
     float m_ClosedHandDist;
-
-    // Hand facing direction
-    const float HGD_PALM_WRIST_DISTANCE = 0.02f;
-    const float HGD_PALM_INDEX_DISTANCE = 0.02f;
-    const float HGD_PALM_LITTLE_DISTANCE = 0.02f;
 
     // Common math constants
     const float MATH_NATURAL_LOG_EPSILON = 2.71828f;
