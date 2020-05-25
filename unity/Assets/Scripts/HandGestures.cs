@@ -174,49 +174,64 @@ public class HandGestures : MonoBehaviour
         ProcessPalmRects();
         ProcessHandRects();
         ProcessHandLandmarks();
+        UpdateHandDetectionLogs();
 
         UpdateSphere();
     }
 
+    void UpdateHandDetectionLogs()
+    {
+        m_LogDisplay.Log("HGD: Hand visibility (accept > +" + HGD_HAND_LANDMARKS_VISIBILITY_RATIO + ") " + m_HandLandmarksVisibilityRatio);
+        m_LogDisplay.Log("HGD: Hand is " + ((m_IsHandVisible) ? "VISIBLE" : "AWAY"));
+        m_LogDisplay.Log("HGD: Wrist-Point/Wrist-Thumb (open hand > " + HGD_WRIST_POINT_TO_WRIST_THUMB_RATIO + ") " + m_WristPointToWristThumbRatio);
+        m_LogDisplay.Log("HGD: Hand is " + ((m_IsHandOpen) ? "OPEN" : "CLOSED"));
+        m_LogDisplay.Log("HGD: Hand size " + m_HandSize);
+        m_LogDisplay.Log("HGD: Palm size " + m_PalmSize);
+        m_LogDisplay.Log("HGD: Hand to Camera distance " + ((m_IsHandOpen) ? m_OpenHandDist : m_ClosedHandDist));
+
+        m_LogDisplay.Log("HGD: Screen pos of palm " + m_PalmPos);
+        m_LogDisplay.Log("HGD: Screen pos of wrist " + m_WristPos);
+        m_LogDisplay.Log("HGD: Screen pos of index " + m_IndexPos);
+        m_LogDisplay.Log("HGD: Screen pos of little " + m_LittlePos);
+        m_LogDisplay.Log("HGD: Screen pos of point " + m_PointPos);
+        m_LogDisplay.Log("HGD: Screen pos of thumb " + m_ThumbPos);
+
+        var palmToWristDist = Vector2.Distance(m_PalmPos, m_WristPos);
+        m_LogDisplay.Log("HGD: Palm to wrist distance " + palmToWristDist);
+        m_LogDisplay.Log("HGD: Palm to wrist dist/ref " + (palmToWristDist / HGD_PALM_WRIST_DISTANCE));
+
+        var palmToIndexDist = Vector2.Distance(m_PalmPos, m_IndexPos);
+        m_LogDisplay.Log("HGD: Palm to index distance " + palmToIndexDist);
+        m_LogDisplay.Log("HGD: Palm to index dist/ref " + (palmToIndexDist / HGD_PALM_INDEX_DISTANCE));
+
+        var palmToLittleDist = Vector2.Distance(m_PalmPos, m_LittlePos);
+        m_LogDisplay.Log("HGD: Palm to little distance " + palmToLittleDist);
+        m_LogDisplay.Log("HGD: Palm to little dist/ref " + (palmToLittleDist / HGD_PALM_LITTLE_DISTANCE));
+    }
+
     void UpdateSphere()
     {
-        m_LogDisplay.Log("Hand size " + m_HandSize);
-        m_LogDisplay.Log("Palm size " + m_PalmSize);
-
-        var handPalmSizeRatio = m_HandSize / m_PalmSize;
-        m_LogDisplay.Log("Hand/palm size ratio " + handPalmSizeRatio);
-
-        var handIndexlengthRatio = Vector2.Distance(m_WristPos, m_PointPos) / Vector2.Distance(m_IndexPos, m_PointPos);
-        m_LogDisplay.Log("Hand/index lenght ratio " + handIndexlengthRatio);
-
-        if (handIndexlengthRatio < 2.6)
+        if (m_IsHandVisible && m_IsHandOpen)
         {
-            m_LogDisplay.Log("Hand is open");
-            m_LogDisplay.Log("Hand distance " + m_OpenHandDist);
-
-            var position = m_Camera.ScreenToWorldPoint(new Vector3(m_PalmCenter.x * Screen.width, m_PalmCenter.y * Screen.height, m_OpenHandDist));
+            var position = m_Camera.ScreenToWorldPoint(new Vector3(m_PalmPos.x * Screen.width, m_PalmPos.y * Screen.height, m_OpenHandDist));
 
             if (!sphere)
             {
                 sphere = Instantiate(m_SpherePrefab, position, Quaternion.identity);
-                m_LogDisplay.Log("Sphere instantiated at " + sphere.transform.position);
+                m_LogDisplay.Log("World: Sphere instantiated at " + sphere.transform.position);
             }
             else
             {
                 sphere.SetActive(true);
                 sphere.transform.position = position;
-                m_LogDisplay.Log("Sphere moved at " + sphere.transform.position);
+                m_LogDisplay.Log("World: Sphere moved at " + sphere.transform.position);
             }
         }
         else
         {
-            m_LogDisplay.Log("Hand is closed");
-            m_LogDisplay.Log("Hand distance " + m_ClosedHandDist);
-
             if (sphere)
                 sphere.SetActive(false);
         }
-        m_LogDisplay.Log("Screen pos of wrist " + m_WristPos + ", index " + m_IndexPos + ", point " + m_PointPos + ", thumb " + m_ThumbPos);
     }
 
     void ProcessPalmRects()
@@ -253,9 +268,9 @@ public class HandGestures : MonoBehaviour
             return;
 
         // Stabilize reported center
-        if (m_PalmCenterAvgSamples < HGD_AVG_PALM_CENTER_NUM_SAMPLES)
-            ++m_PalmCenterAvgSamples;
-        m_PalmCenter += (rectPos - m_PalmCenter) / m_PalmCenterAvgSamples;
+        if (m_PalmAvgSamples < HGD_AVG_PALM_NUM_SAMPLES)
+            ++m_PalmAvgSamples;
+        m_PalmPos += (rectPos - m_PalmPos) / m_PalmAvgSamples;
 
         // Calculate palm magnitude
         m_PalmSize = Mathf.Sqrt(Mathf.Pow(rectSize.x, 2) + Mathf.Pow(rectSize.y, 2));
@@ -309,6 +324,12 @@ public class HandGestures : MonoBehaviour
 
     void ProcessHandLandmarks()
     {
+        if (m_HandLandmarksVisibilityCounter > 0)
+            m_HandLandmarksVisibilityCounter = (m_HandLandmarksVisibilityCounter - 1) % HGD_HAND_LANDMARKS_VISIBILITY_COUNT_MAX;
+        m_HandLandmarksVisibilityRatio = 1.0f * m_HandLandmarksVisibilityCounter / HGD_HAND_LANDMARKS_VISIBILITY_COUNT_MAX;
+
+        m_IsHandVisible = m_HandLandmarksVisibilityRatio > HGD_HAND_LANDMARKS_VISIBILITY_RATIO;
+
         if (Interlocked.Exchange(ref m_HandLandmarksLock, 1) != 0)
             return;
 
@@ -316,8 +337,8 @@ public class HandGestures : MonoBehaviour
         int num_hands = (int)m_HandLandmarks[HGD_HLM_PKT_NUM_HANDS_OFFSET];
         if (num_hands == 0)
         {
-            Interlocked.Exchange(ref m_HandLandmarksLock, 0);
             m_HandLandmarksAcceptCounter = HGD_ACCEPT_THRESHOLD;
+            Interlocked.Exchange(ref m_HandLandmarksLock, 0);
             return;
         }
         else
@@ -332,18 +353,36 @@ public class HandGestures : MonoBehaviour
 
         // Read packet buffer
         var wristOffset = HGD_HLM_PKT_HEADER_LEN + HGD_HLM_PKT_FIRST_HAND_LANDMARKS_OFFSET + HGD_HLM_PKT_FIRST_HAND_LM0_OFFSET;
-        m_WristPos = new Vector3(1 - m_HandLandmarks[wristOffset + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET], 1 - m_HandLandmarks[wristOffset + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET], m_HandLandmarks[wristOffset + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET]);
+        var wristPos = new Vector3(1 - m_HandLandmarks[wristOffset + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET], 1 - m_HandLandmarks[wristOffset + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET], m_HandLandmarks[wristOffset + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET]);
 
         var indexOffset = HGD_HLM_PKT_HEADER_LEN + HGD_HLM_PKT_FIRST_HAND_LANDMARKS_OFFSET + HGD_HLM_PKT_FIRST_HAND_LM5_OFFSET;
-        m_IndexPos = new Vector3(1 - m_HandLandmarks[indexOffset + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET], 1 - m_HandLandmarks[indexOffset + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET], m_HandLandmarks[indexOffset + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET]);
+        var indexPos = new Vector3(1 - m_HandLandmarks[indexOffset + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET], 1 - m_HandLandmarks[indexOffset + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET], m_HandLandmarks[indexOffset + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET]);
 
         var pointOffset = HGD_HLM_PKT_HEADER_LEN + HGD_HLM_PKT_FIRST_HAND_LANDMARKS_OFFSET + HGD_HLM_PKT_FIRST_HAND_LM8_OFFSET;
-        m_PointPos = new Vector3(1 - m_HandLandmarks[pointOffset + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET], 1 - m_HandLandmarks[pointOffset + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET], m_HandLandmarks[pointOffset + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET]);
+        var pointPos = new Vector3(1 - m_HandLandmarks[pointOffset + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET], 1 - m_HandLandmarks[pointOffset + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET], m_HandLandmarks[pointOffset + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET]);
 
         var thumbOffset = HGD_HLM_PKT_HEADER_LEN + HGD_HLM_PKT_FIRST_HAND_LANDMARKS_OFFSET + HGD_HLM_PKT_FIRST_HAND_LM4_OFFSET;
-        m_ThumbPos = new Vector3(1 - m_HandLandmarks[thumbOffset + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET], 1 - m_HandLandmarks[thumbOffset + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET], m_HandLandmarks[thumbOffset + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET]);
+        var thumbPos = new Vector3(1 - m_HandLandmarks[thumbOffset + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET], 1 - m_HandLandmarks[thumbOffset + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET], m_HandLandmarks[thumbOffset + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET]);
+
+        var littleOffset = HGD_HLM_PKT_HEADER_LEN + HGD_HLM_PKT_FIRST_HAND_LANDMARKS_OFFSET + HGD_HLM_PKT_FIRST_HAND_LM17_OFFSET;
+        var littlePos = new Vector3(1 - m_HandLandmarks[littleOffset + HGD_HLM_PKT_HAND_LANDMARK_X_OFFSET], 1 - m_HandLandmarks[thumbOffset + HGD_HLM_PKT_HAND_LANDMARK_Y_OFFSET], m_HandLandmarks[littleOffset + HGD_HLM_PKT_HAND_LANDMARK_Z_OFFSET]);
 
         Interlocked.Exchange(ref m_HandLandmarksLock, 0);
+
+        m_HandLandmarksVisibilityCounter = HGD_HAND_LANDMARKS_VISIBILITY_COUNT_MAX;
+
+        // Stabilize landmark readings
+        if (m_LmAvgSamples < HGD_AVG_LM_NUM_SAMPLES)
+            ++m_LmAvgSamples;
+        m_WristPos += (wristPos - m_WristPos) / m_LmAvgSamples;
+        m_IndexPos += (indexPos - m_IndexPos) / m_LmAvgSamples;
+        m_PointPos += (pointPos - m_PointPos) / m_LmAvgSamples;
+        m_ThumbPos += (thumbPos - m_ThumbPos) / m_LmAvgSamples;
+        m_LittlePos += (littlePos - m_LittlePos) / m_LmAvgSamples;
+
+        // Determine if the hand is open/closed
+        m_WristPointToWristThumbRatio = Vector2.Distance(m_WristPos, m_PointPos) / Vector2.Distance(m_WristPos, m_ThumbPos);
+        m_IsHandOpen = m_WristPointToWristThumbRatio > HGD_WRIST_POINT_TO_WRIST_THUMB_RATIO;
     }
 
     void ProcessCameraFeedback()
@@ -363,7 +402,7 @@ public class HandGestures : MonoBehaviour
     }
 
     // Minimum number of successive hand detections
-    const int HGD_ACCEPT_THRESHOLD = 20;
+    const int HGD_ACCEPT_THRESHOLD = 10;
 
     // Landmarks packet HLM_PKT (N_HANDS #N, N_HLM #0, N_HLM #1, LM #0_0, .., LM #0_1, LM #1_0, .., LM #1_20)
     const int HGD_HLM_PKT_HEADER_LEN = 3;
@@ -385,11 +424,18 @@ public class HandGestures : MonoBehaviour
     const int HGD_HLM_PKT_FIRST_HAND_LM4_OFFSET = 4;
     const int HGD_HLM_PKT_FIRST_HAND_LM5_OFFSET = 5;
     const int HGD_HLM_PKT_FIRST_HAND_LM8_OFFSET = 8;
+    const int HGD_HLM_PKT_FIRST_HAND_LM17_OFFSET = 17;
 
     // Landmarks packet buffer
-    static int m_HandLandmarksLock = 0;
+    static int m_HandLandmarksLock;
     static float[] m_HandLandmarks = new float[HGD_HLM_PKT_LEN];
-    int m_HandLandmarksAcceptCounter = 0;
+    int m_HandLandmarksAcceptCounter;
+
+    // Landmarks visibility
+    const int HGD_HAND_LANDMARKS_VISIBILITY_COUNT_MAX = 20;
+    const float HGD_HAND_LANDMARKS_VISIBILITY_RATIO = 0.3f;
+    int m_HandLandmarksVisibilityCounter;
+    float m_HandLandmarksVisibilityRatio;
 
     // Rects packet HRC_PKT (N_HANDS #N, RECT_ID #0, .., RECT_R #0, RECT_ID #1, .., RECT_R #1)
     const int HGD_HRC_PKT_HEADER_LEN = 1;
@@ -410,25 +456,39 @@ public class HandGestures : MonoBehaviour
     const int HGD_HRC_PKT_FIRST_RECT_OFFSET = 0;
 
     // Hand rects packet buffer
-    static int m_HandRectsLock = 0;
+    static int m_HandRectsLock;
     static float[] m_HandRects = new float[HGD_HRC_PKT_LEN];
-    int m_HandRectsAcceptCounter = 0;
+    int m_HandRectsAcceptCounter;
 
     // Palm rects packet buffer
-    static int m_PalmRectsLock = 0;
+    static int m_PalmRectsLock;
     static float[] m_PalmRects = new float[HGD_HRC_PKT_LEN];
-    int m_PalmRectsAcceptCounter = 0;
+    int m_PalmRectsAcceptCounter;
 
     // HGD Camera feedback
-    static int m_PixelBufferLock = 0;
-    static byte[] m_PixelBuffer = null;
-    static Vector2Int m_PixelBufferSize = new Vector2Int(0, 0);
+    static int m_PixelBufferLock;
+    static byte[] m_PixelBuffer;
+    static Vector2Int m_PixelBufferSize;
+
+    // Hand visibility
+    bool m_IsHandVisible;
 
     // Last detected hand landmarks
+    const int HGD_AVG_LM_NUM_SAMPLES = 5;
+
+    int m_LmAvgSamples = 0;
     Vector3 m_WristPos;
     Vector3 m_IndexPos;
     Vector3 m_PointPos;
     Vector3 m_ThumbPos;
+    Vector3 m_LittlePos;
+
+    // Wrist-thumb / Wrist-point ratio
+    const float HGD_WRIST_POINT_TO_WRIST_THUMB_RATIO = 1.1f;
+
+    float m_WristPointToWristThumbRatio;
+
+    bool m_IsHandOpen;
 
     // Hand rect detection constraints
     const float HGD_HAND_RECT_SIDE_MIN = 0.2f;
@@ -442,10 +502,10 @@ public class HandGestures : MonoBehaviour
     const float HGD_PALM_RECT_SIDE_MAX = 0.5f;
 
     // Palm center position detection
-    const int HGD_AVG_PALM_CENTER_NUM_SAMPLES = 6;
+    const int HGD_AVG_PALM_NUM_SAMPLES = 5;
 
-    int m_PalmCenterAvgSamples = 0;
-    Vector2 m_PalmCenter;
+    int m_PalmAvgSamples;
+    Vector2 m_PalmPos;
 
     // Palm magnitude
     float m_PalmSize;
@@ -459,13 +519,18 @@ public class HandGestures : MonoBehaviour
     const float HGD_DISTANCE_CLOSED_HAND_PARAM_C = 9.7f;
     const float HGD_DISTANCE_MIN = 0.2f;
     const float HGD_DISTANCE_MAX = 0.8f;
-    const int HGD_AVG_DISTANCE_NUM_SAMPLES = 10;
+    const int HGD_AVG_DISTANCE_NUM_SAMPLES = 5;
 
-    int m_HandDistAvgSamples = 0;
+    int m_HandDistAvgSamples;
 
     // Last estimated hand distance from camera
     float m_OpenHandDist;
     float m_ClosedHandDist;
+
+    // Hand facing direction
+    const float HGD_PALM_WRIST_DISTANCE = 0.02f;
+    const float HGD_PALM_INDEX_DISTANCE = 0.02f;
+    const float HGD_PALM_LITTLE_DISTANCE = 0.02f;
 
     // Common math constants
     const float MATH_NATURAL_LOG_EPSILON = 2.71828f;
