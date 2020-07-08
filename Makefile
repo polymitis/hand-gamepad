@@ -1,8 +1,6 @@
-PROJECTNAME=morpheus
-
 # Unity
 UNITY_PROJ_ROOT=$(CURDIR)/unity
-UNITY_EDITOR_VERSION=2019.3.9f1
+UNITY_EDITOR_VERSION=2019.4.2f1
 UNITY_EDITOR_ROOT=/Applications/Unity/Hub/Editor/$(UNITY_EDITOR_VERSION)
 UNITY_APP=$(UNITY_EDITOR_ROOT)/Unity.app/Contents/MacOS/Unity
 UNITY_PROJ_DIRS=$(UNITY_PROJ_ROOT)/Assets $(UNITY_PROJ_ROOT)/Packages $(UNITY_PROJ_ROOT)/ProjectSettings
@@ -12,7 +10,6 @@ UNITY_PLUGINS_IOS_NATIVE_DIR=Plugins/iOS/Native
 MP_PROJ_ROOT=$(CURDIR)/mediapipe
 MP_WS_ROOT=$(MP_PROJ_ROOT)/mediapipe/workspace
 MP_WS_BUILD_ROOT=mediapipe/workspace
-BAZEL_110=$(SCRATCHHOME)/bazel-1.1.0/output/bazel
 
 # Hand gesture detector plugin
 HGD_NAME=HandGestureDetector
@@ -74,17 +71,25 @@ unity-ios-dev: $(UNITY_PROJ_DIRS)
 
 mp-hgd-ios:
 	cd $(MP_PROJ_ROOT) && echo "Entering mediapipe/ directory" && \
-	$(BAZEL_110) build --config=ios_arm64 $(MP_HGD_PROJ_BUILD_ROOT)/ios:$(HGD_NAME) && \
+	bazel build -c opt --config=ios_arm64 $(MP_HGD_PROJ_BUILD_ROOT)/ios:$(HGD_NAME) && \
 	rm -Rf $(UNITY_HGD_PLUGIN_ROOT)/$(UNITY_PLUGINS_IOS_NATIVE_DIR)/$(HGD_NAME).framework && \
 	unzip bazel-bin/$(MP_HGD_PROJ_BUILD_ROOT)/ios/$(HGD_NAME).zip -d $(UNITY_HGD_PLUGIN_ROOT)/$(UNITY_PLUGINS_IOS_NATIVE_DIR) && \
 	cd .. && echo "Leaving mediapipe/ directory"
 
-clean: clean-ios
+clean: clean-ios clean-unity clean-bazel
 
 clean-ios: clean-unity-ios-rel clean-unity-ios-dev clean-mp-hgd-ios
 
 clean-unity: clean-unity-ios-rel clean-unity-ios-dev
 	rm -Rf Builds/ Library/ temp/ obj/
+
+clean-bazel: clean-mp-hgd-ios
+	cd $(MP_PROJ_ROOT) && echo "Entering mediapipe/ directory" && \
+	bazel clean --expunge && \
+	sudo xcode-select -s /Applications/Xcode.app/Contents/Developer && \
+	sudo xcodebuild -license && \
+	bazel clean --expunge && \
+	cd .. && echo "Leaving mediapipe/ directory"
 
 clean-unity-ios-rel:
 	rm -Rf "$(UNITY_PROJ_ROOT)/Builds/ios/release"
@@ -93,7 +98,4 @@ clean-unity-ios-dev:
 	rm -Rf "$(UNITY_PROJ_ROOT)/Builds/ios/development"
 
 clean-mp-hgd-ios:
-	cd $(MP_PROJ_ROOT) && echo "Entering mediapipe/ directory" && \
-        $(BAZEL_110) clean && \
-        cd .. && echo "Leaving mediapipe/ directory" && \
 	rm -Rf $(UNITY_HGD_PLUGIN_ROOT)/$(UNITY_PLUGINS_IOS_NATIVE_DIR)/$(HGD_NAME).framework
