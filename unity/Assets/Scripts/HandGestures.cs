@@ -137,19 +137,19 @@ public class HandGestures : MonoBehaviour
 
     unsafe void OnCameraFrameReceived(ARCameraFrameEventArgs eventArgs)
     {
-        XRCameraImage image;
-        if (!m_CameraManager.TryGetLatestImage(out image))
+        XRCpuImage image;
+        if (!m_CameraManager.TryAcquireLatestCpuImage(out image))
             return;
 
         //m_MiniDisplay.UpdateDisplay(image);
 
 #if !UNITY_EDITOR && UNITY_IOS
-        var conversionParams = new XRCameraImageConversionParams
+        var conversionParams = new XRCpuImage.ConversionParams
         {
             inputRect = new RectInt(0, 0, image.width, image.height),
             outputDimensions = new Vector2Int(image.width / 2, image.height / 2),
             outputFormat = TextureFormat.BGRA32,
-            transformation = CameraImageTransformation.MirrorY
+            transformation = XRCpuImage.Transformation.MirrorY
         };
 
         int size = image.GetConvertedDataSize(conversionParams);

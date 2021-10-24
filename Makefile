@@ -1,6 +1,6 @@
 # Unity
 UNITY_PROJ_ROOT=$(CURDIR)/unity
-UNITY_EDITOR_VERSION=2019.4.2f1
+UNITY_EDITOR_VERSION=2020.3.19f1
 UNITY_EDITOR_ROOT=/Applications/Unity/Hub/Editor/$(UNITY_EDITOR_VERSION)
 UNITY_APP=$(UNITY_EDITOR_ROOT)/Unity.app/Contents/MacOS/Unity
 UNITY_PROJ_DIRS=$(UNITY_PROJ_ROOT)/Assets $(UNITY_PROJ_ROOT)/Packages $(UNITY_PROJ_ROOT)/ProjectSettings
@@ -71,7 +71,7 @@ unity-ios-dev: $(UNITY_PROJ_DIRS)
 
 mp-hgd-ios:
 	cd $(MP_PROJ_ROOT) && echo "Entering mediapipe/ directory" && \
-	bazel build -c opt --config=ios_arm64 $(MP_HGD_PROJ_BUILD_ROOT)/ios:$(HGD_NAME) && \
+	bazelisk build -c opt --config=ios_arm64 --incompatible_run_shell_command_string=false --incompatible_objc_provider_remove_compile_info=false $(MP_HGD_PROJ_BUILD_ROOT)/ios:$(HGD_NAME) && \
 	rm -Rf $(UNITY_HGD_PLUGIN_ROOT)/$(UNITY_PLUGINS_IOS_NATIVE_DIR)/$(HGD_NAME).framework && \
 	unzip bazel-bin/$(MP_HGD_PROJ_BUILD_ROOT)/ios/$(HGD_NAME).zip -d $(UNITY_HGD_PLUGIN_ROOT)/$(UNITY_PLUGINS_IOS_NATIVE_DIR) && \
 	cd .. && echo "Leaving mediapipe/ directory"

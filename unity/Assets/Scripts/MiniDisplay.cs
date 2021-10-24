@@ -28,14 +28,14 @@ public class MiniDisplay : MonoBehaviour
         m_CanvasRenderer.SetTexture(m_DisplayTexture);
     }
 
-    unsafe public void UpdateDisplay(XRCameraImage image)
+    unsafe public void UpdateDisplay(XRCpuImage image)
     {
-        var conversionParams = new XRCameraImageConversionParams
+        var conversionParams = new XRCpuImage.ConversionParams
         {
             inputRect = new RectInt(0, 0, image.width, image.height),
             outputDimensions = new Vector2Int(image.width / 2, image.height / 2),
             outputFormat = TextureFormat.RGBA32,
-            transformation = CameraImageTransformation.MirrorY
+            transformation = XRCpuImage.Transformation.MirrorY
         };
 
         if (conversionParams != m_ConversionParams)
@@ -69,7 +69,7 @@ public class MiniDisplay : MonoBehaviour
 
     private Vector2Int m_BufferSize;
 
-    private XRCameraImageConversionParams m_ConversionParams;
+    private XRCpuImage.ConversionParams m_ConversionParams;
 
     private Texture2D m_DisplayTexture;
 

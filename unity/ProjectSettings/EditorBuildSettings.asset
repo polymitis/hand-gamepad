@@ -9,7 +9,9 @@ EditorBuildSettings:
     path: Assets/Scenes/HGD Plugin.unity
     guid: 150e67456692c4ec6ba9bc22a0b0790a
   m_configObjects:
+    UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: fe81cb635b8ae441a9c1357eb1460824,
+      type: 2}
     com.unity.xr.arcore.PlayerSettings: {fileID: 11400000, guid: fe696098519d049208e2544c05a2b925,
       type: 2}
-    com.unity.xr.arkit.PlayerSettings: {fileID: 11400000, guid: fe81cb635b8ae441a9c1357eb1460824,
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 6e4b1ec51b0d144f6af9c310c79f9376,
       type: 2}
