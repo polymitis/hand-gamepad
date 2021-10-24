@@ -87,8 +87,14 @@ void UnityIOSHandGestureDetectorCIntf_ProcessSRGBImage(intptr_t imageBuffer, int
         return;
     }
     @autoreleasepool {
-        CVPixelBufferRef pixelBuffer;
-        CVPixelBufferCreateWithBytes(NULL, width, height, kCVPixelFormatType_32BGRA, (void*)imageBuffer, width * 4, NULL, 0, NULL, &pixelBuffer);
+        CVPixelBufferRef pixelBuffer = NULL;
+        NSDictionary *attributes = @{
+            @"IOSurfaceCoreAnimationCompatibility": @YES
+        };
+        CVPixelBufferCreate(kCFAllocatorDefault, width, height, kCVPixelFormatType_32BGRA, (__bridge CFDictionaryRef)attributes, &pixelBuffer);
+        CVPixelBufferLockBaseAddress(pixelBuffer, 0);
+        memcpy(CVPixelBufferGetBaseAddress(pixelBuffer), imageBuffer, CVPixelBufferGetDataSize(pixelBuffer));
+        CVPixelBufferUnlockBaseAddress(pixelBuffer, kCVPixelBufferLock_ReadOnly);
         [[UnityIOSHandGestureDetectorCIntf instance] processPixelBuffer:pixelBuffer];
         CVPixelBufferRelease(pixelBuffer);
     }
