@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
@@ -33,7 +34,7 @@ public class NavigatePlane : MonoBehaviour
     void Awake()
     {
         m_RaycastManager = GetComponent<ARRaycastManager>();
-        m_SessionOrigin = GetComponent<ARSessionOrigin>();
+        m_SessionOrigin = GetComponent<XROrigin>();
         m_Camera = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
     }
 
@@ -108,9 +109,10 @@ public class NavigatePlane : MonoBehaviour
                 var hitPose = m_Hits[0].pose;
 
                 plane = Instantiate(m_PlanePrefab, hitPose.position, hitPose.rotation);
-                m_SessionOrigin.MakeContentAppearAt(plane.transform,
+                XROriginExtensions.MakeContentAppearAt(m_SessionOrigin, plane.transform,
                     plane.transform.position,
                     plane.transform.rotation);
+
                 Debug.Log("NavigatePlane: Plane instantiated at " + hitPose.position);
             }
         }
@@ -187,7 +189,7 @@ public class NavigatePlane : MonoBehaviour
 
     private ARRaycastManager m_RaycastManager;
 
-    private ARSessionOrigin m_SessionOrigin;
+    private XROrigin m_SessionOrigin;
 
     private static readonly float m_zoomSpeed = 0.05f;
 }

@@ -71,7 +71,7 @@ unity-ios-dev: $(UNITY_PROJ_DIRS)
 
 mp-hgd-ios:
 	cd $(MP_PROJ_ROOT) && echo "Entering mediapipe/ directory" && \
-	bazelisk build -c opt --config=ios_arm64 --incompatible_run_shell_command_string=false --incompatible_objc_provider_remove_compile_info=false $(MP_HGD_PROJ_BUILD_ROOT)/ios:$(HGD_NAME) && \
+	bazelisk build -c opt --config=ios_arm64 --incompatible_run_shell_command_string=false --incompatible_use_platforms_repo_for_constraints=false $(MP_HGD_PROJ_BUILD_ROOT)/ios:$(HGD_NAME) && \
 	rm -Rf $(UNITY_HGD_PLUGIN_ROOT)/$(UNITY_PLUGINS_IOS_NATIVE_DIR)/$(HGD_NAME).framework && \
 	unzip bazel-bin/$(MP_HGD_PROJ_BUILD_ROOT)/ios/$(HGD_NAME).zip -d $(UNITY_HGD_PLUGIN_ROOT)/$(UNITY_PLUGINS_IOS_NATIVE_DIR) && \
 	cd .. && echo "Leaving mediapipe/ directory"
